@@ -23,3 +23,49 @@ re_comparable_index = dict(
             (re.compile(u"(\d+)以上"), ">", 1)
             ]
         )
+
+mongo_grounded_index_condition = dict(
+
+        # configs are listed as K:V pairs categorized by each domain,
+        # where K is a realistic key name in mongo
+        # and V is a triple
+        # whose elements meanings are, respectively,
+        #   1. how value comparison is supported according to this key,
+        #       contains: database value can contain the text in query
+        #              =: database value must be equal to the value in query
+        #        compare: database value is a comparable to a given number
+        #   2. what a value is stored actually in mongodb
+        #           prop: the specified value is a bare key in db, compare with it directly
+        #         nested: the specified value is contained in a nested document
+        #   3. the actual comparable key name in database.
+        #      if the value is nested, this field contains the actual nested property selector
+
+        cater = {
+            u'地址': ('contains', 'prop', u'地址'),
+            u'名称': ('=', 'prop', u'名称'),
+            u'推荐菜品': ('=', 'nested', u'推荐菜品.推荐菜'),
+            u'电话': ('=', 'prop', u'电话'),
+            u'人均消费': ('compare', 'prop', u'人均消费'),
+            #u'营业时间': ('compare', 'prop', ''), # not supported as a condition yet
+            },
+
+        hotel = {
+            u'地址': ('contains', 'prop', u'地址'),
+            u'名称': ('=', 'prop', u'名称'),
+            u'联系方式': ('=', 'prop', u'联系方式'),
+            u'每晚最低价格': ('compare', 'prop', u'每晚最低价格'),
+            u'酒店设施': ('=', 'nested', u'酒店设施.设施'),
+            u'房间设施': ('=', 'nested', u'房间设施.设施'),
+            u'酒店服务': ('=', 'nested', u'酒店服务.服务'),
+            #u'入离店时间': ('compare', 'prop', ''), # not supported as a condition yet
+            },
+
+        tour = {
+            u'地址': ('contains', 'prop', u'地址'),
+            u'名称': ('=', 'prop', u'名称'),
+            u'电话': ('=', 'prop', u'电话'),
+            u'门票价格': ('compare', 'prop', u'门票价格'),
+            #u'营业时间': ('compare', 'prop', ''), # not supported as a condition yet
+            },
+
+        )

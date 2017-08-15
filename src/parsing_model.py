@@ -80,9 +80,13 @@ class Parsing(object):
             grounded['select'].append('*')
 
         grounded['where'] = {}
+        db_condition = conf.mongo_grounded_index_condition.get(domain)
+        if db_condition is None: return None
+
         for (key, (sym, val, score)) in ungrounded_form['where'].iteritems():
-            field = self._field_map[domain].get(key)
-            if field is None: return None
+            key_support = db_condition.get(self._field_map[domain].get(key))
+            if key_support is None: return None
+            comp_type, _, field = key_support
 
             if sym == '=':
                 grounded['where'][field] = val
