@@ -6,23 +6,6 @@ from substring import substring_iter
 class Parsing(object):
     def __init__(self, dicts):
         self._dicts = dicts
-        self._domain_map = {'catering': 'cater', 'tour': 'tour', 'hotel': 'hotel'}
-        self._city_map = {u'广州': 'guangzhou', u'北京': 'beijing', u'上海': 'shanghai'}
-        self._field_map = {
-                'cater': {
-                    'address': u'地址', 'category': u'领域', 'entity': u'名称', 'location': u'地点',
-                    'dish': u'推荐菜品', 'phone': u'电话', 'price': u'人均消费', 'opening_hour': u'营业时间',
-                    },
-                'hotel': {
-                    'address': u'地址', 'category': u'领域', 'entity': u'名称', 'location': u'地点',
-                    'check-in_time': u'入离店时间', 'phone': u'联系方式', 'price_per_night': u'每晚最低价格',
-                    'hotel_facility': u'酒店设施', 'room_facility': u'房间设施', 'service': u'酒店服务'
-                    },
-                'tour': {
-                    'address': u'地址', 'category': u'领域', 'entity': u'名称', 'location': u'地点',
-                    'opening_hour': u'营业时间', 'phone': u'电话', 'price': u'门票价格'
-                    },
-                }
 
     def parse_for_mongo(self, u_q):
         matched_keys = self._match_keys(u_q)
@@ -40,64 +23,102 @@ class Parsing(object):
         matched_keys = {}
         dicts = self._dicts
 
+        # overlap checking, a span shall not be overlappingly used
+        pos_overlap_check = []
+
+        # reg exp on the whole sentence, all kinds of comparable keys
+        for index, rulelist in conf.re_comparable_index.iteritems():
+            for (patobj, sym, groupid) in rulelist:
+                m = patobj.search(u_q)
+                if m:
+                    matched_keys[index] = [(sym, float(m.group(groupid)), 1)]
+                    pos_overlap_check.append(m.span())
+                    break
+
         # exact match for substring
-        for substring in substring_iter(u_q, min_len=2):
+        for substring, span in substring_iter(u_q, min_len=2):
             if len(substring) > 10: continue
+            if not(all(span[1] <= s[0] or span[0] >= s[1] for s in pos_overlap_check)):
+                continue
 
             for index in dicts.iterkeys():
                 score = dicts[index].get(substring)
                 if score is None: continue
 
-                if (index not in matched_keys) or (
-                    score > matched_keys[index][2]) or (
-                    score == matched_keys[index][2] and len(substring) > len(matched_keys[index][1])):
-                    matched_keys[index] = ('=', substring, score)
+                if index not in matched_keys:
+                    matched_keys[index] = []
 
-        # reg exp on the whole sentence
-        index = 'catering_price'
-        rulelist = conf.re_comparable_index[index]
-        for (patobj, sym, groupid) in rulelist:
-            m = patobj.search(u_q)
-            if m:
-                matched_keys[index] = (sym, float(m.group(groupid)), 1)
-                break
+                # save all the possible matches as a list
+                matched_keys[index].append(('=', substring.strip(), score))
 
         return matched_keys
 
     def _make_grounded_query(self, ungrounded_form):
         grounded = {}
 
+        domain_map = conf.mongo_grounding_map['domain_map']
+        city_map = conf.mongo_grounding_map['city_map']
+        field_map = conf.mongo_grounding_map['field_map']
+
+        # ground-ing `from` section
         uf_from = ungrounded_form['from']
-        domain, city = self._domain_map.get(uf_from[0]), self._city_map.get(uf_from[1])
+        domain, city = domain_map.get(uf_from[0]), city_map.get(uf_from[1])
         if domain is None or city is None:
             return None
         grounded['from'] = city + '_' + domain
 
-        grounded['select'] = [self._field_map[domain].get(x) for x in ungrounded_form['select']]
-        if None in grounded['select']:
+        # ground-ing `select` section
+        grounded['select'] = [field_map[domain].get(x) for x in ungrounded_form['select']]
+        if None in grounded['select']: # which means there's invalid index name in the ungrounded_form
             return None
         if len(ungrounded_form['select']) == 1 and 'entity' in ungrounded_form['select']:
             grounded['select'].append('*')
+        elif len(ungrounded_form['select']) == 0: # nothing selected
+            grounded['select'].extend(field_map[domain][x] for x in ['entity', 'address'])
+        elif 'entity' not in ungrounded_form['select']:
+            grounded['select'].append(field_map[domain]['entity'])
 
+        # ground-ing `where` section
         grounded['where'] = {}
-        db_condition = conf.mongo_grounded_index_condition.get(domain)
-        if db_condition is None: return None
+        comp_spec = conf.mongo_comparison_spec.get(domain)
+        if comp_spec is None: return None
 
-        for (key, (sym, val, score)) in ungrounded_form['where'].iteritems():
-            key_support = db_condition.get(self._field_map[domain].get(key))
-            if key_support is None: return None
-            comp_type, _, field = key_support
+        for (key, possible_matches) in ungrounded_form['where'].iteritems():
+            # possible_matches is [ (sym, val, score), ... ], namely a triple list
+            # if comparison type is =, then any value "$in" triple list is possible
+            # if comparison type is compare
+            
+            key_comp_spec = comp_spec.get(field_map[domain].get(key))
+            if key_comp_spec is None: return None
+            comp_type, _, field = key_comp_spec
 
-            if sym == '=':
-                grounded['where'][field] = val
-            elif sym == '>':
-                grounded['where'][field] = {'$gt': val}
-            elif sym == '<':
-                grounded['where'][field] = {'$lt': val}
-            else:
-                pass
+            if comp_type == '=':
+                grounded['where'][field] = {'$in': [val for _, val, _ in possible_matches]}
+            elif comp_type == 'compare':
+                grounded['where'][field] = {}
+                for triple in possible_matches:
+                    grounded_cond = self._ground_a_comparing_triple(triple, field)
+                    grounded['where'][field].update(grounded_cond)
 
         return grounded
+
+    def _ground_a_comparing_triple(self, triple, field):
+        sym, val, score = triple
+        if sym == '=':
+            return {'$eq': val}
+        elif sym == '>':
+            return {'$gt': val}
+        elif sym == '<':
+            return {'$lt': val}
+        elif sym == '<=':
+            return {'$lte': val}
+        elif sym == '<+':
+            return {'$lt': val, '$gt': 0}
+        elif sym == '<=+':
+            return {'$lte': val, '$gt': 0}
+        else:
+            pass
+        return {}
 
     def _parsing_first_order_rules(self, matched_keys):
         # example of matched_keys:
@@ -108,31 +129,49 @@ class Parsing(object):
         if city is None: return None
 
         # filter the matches for the specific domain, and remove domain prefix for all keys
-        domain_match = dict((k[(k.find('_') + 1):], v) for k, v in matched_keys.iteritems()
+        in_domain_match = dict((k[(k.find('_') + 1):], v) for k, v in matched_keys.iteritems()
                 if domain in k and 'category' not in k and 'location' not in k)
 
-        ungrounded_form = self._build_unground_form(domain, city, domain_match)
+        ungrounded_form = self._build_unground_form(domain, city, in_domain_match)
 
         return ungrounded_form
 
-    def _build_unground_form(self, domain, city, domain_match):
+    def _build_unground_form(self, domain, city, in_domain_match):
         ungrounded_form = {'where': {}, 'select': [], 'from': [domain, city]}
 
-        # entity is a dominate key
-        if 'entity' in domain_match.keys():
-            ungrounded_form['where'] = {'entity': domain_match['entity']}
-            ungrounded_form['select'] = [k for k in domain_match.iterkeys() if k != 'entity']
-            return ungrounded_form
+        # predict query structure depending on the matched key types
+        keys = set(in_domain_match.keys())
 
-        ungrounded_form['select'] = ['entity']
-        ungrounded_form['where'] = domain_match
+        # check the conditionable keys
+        condition_keys = conf.conditionable_index[domain]
+        for k in condition_keys:
+            if k not in keys: continue
+            if not ungrounded_form['where']:
+                ungrounded_form['where'][k] = in_domain_match[k]
+            keys.remove(k)
 
+        ungrounded_form['select'] = list(keys)
+        # remove the conditionable keys if its interrogative companion is in `select` section
+        # because the interrogation words are more accurate
+        for k in keys:
+            if k + '_cond' in ungrounded_form['where']:
+                del ungrounded_form['where'][k + '_cond']
         return ungrounded_form
 
+    def _best_triple_by_score(self, matched_keys, key):
+        # matched keys contains: K, V pairs
+        # K is a string
+        # V is a list of triples: (symbol, value, score)
+        if key not in matched_keys:
+            return None
+
+        best_triple = max(matched_keys[key], key=lambda x: x[2]) 
+        return best_triple
+
     def _parse_city(self, domain, matched_keys):
-        city_pair = matched_keys.get(domain + '_location')
-        if city_pair is not None:
-            return city_pair[1]
+        city_triple = self._best_triple_by_score(matched_keys, domain + '_location')
+        if city_triple is not None:
+            return city_triple[1]
 
         # additional rules to extract city can be added here in the future
         return None
@@ -140,17 +179,18 @@ class Parsing(object):
     def _parse_domain(self, matched_keys):
         category_keys = [key for key in matched_keys.iterkeys() if 'category' in key]
         key_to_domain = lambda key: key.split('_')[0]
-        choose_best_key_by_score = lambda l: max(l, key=lambda x: matched_keys[x][2])
+        choose_best_key_by_best_score = (
+            lambda l: max(l, key=lambda x: self._best_triple_by_score(matched_keys, x)[2]))
 
         if len(category_keys) >= 1:
             # choose the one with HIGHEST SCORE among candidates
-            best_key = choose_best_key_by_score(category_keys)
+            best_key = choose_best_key_by_best_score(category_keys)
             return key_to_domain(best_key)
 
         # no category keys explicitly found, use the entity type
         entity_keys = [key for key in matched_keys.iterkeys() if 'entity' in key]
         if len(entity_keys) >= 1:
-            best_key = choose_best_key_by_score(entity_keys)
+            best_key = choose_best_key_by_best_score(entity_keys)
             return key_to_domain(best_key)
 
         # no other features

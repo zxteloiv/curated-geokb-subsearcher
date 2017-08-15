@@ -7,7 +7,7 @@ def substring_iter(string, min_len=1):
             if endpos > len(string):
                 break
 
-            yield string[pos:endpos]
+            yield string[pos:endpos], (pos, endpos)
 
 if __name__ == "__main__":
     string = "hello"
