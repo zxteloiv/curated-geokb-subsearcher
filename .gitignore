@@ -99,3 +99,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+*.swp
+*.log
+*.tmp
+*.out
+*.stat
