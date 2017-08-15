@@ -40,7 +40,12 @@ class SearchHandler(tornado.web.RequestHandler):
         mongo = MongoQuery()
         docs = mongo.query(grounded)
 
-        self.write(json.dumps({"errno":0, "errmsg":"ok", "data":docs}))
+        # debug ungrounded
+        ungrounded = self.application.parsing_model._parsing_first_order_rules(
+                self.application.parsing_model._match_keys(q))
+
+        self.write(json.dumps({"errno":0, "errmsg":"ok", "data":docs,
+            "ungrounded":ungrounded, "grounded":grounded}))
 
 class GeoKBSearcher(tornado.web.Application):
     def init_dict(self):
