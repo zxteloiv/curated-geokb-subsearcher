@@ -13,7 +13,7 @@ if __name__ == "__main__":
     string = "hello"
     print "Given string:", string, 'length:', len(string)
 
-    all_substrings = [s for s in substring_iter(string)]
+    all_substrings = [s for s, _ in substring_iter(string)]
     print "Number of substrings:", len(all_substrings)
 
     print "all substrings listed below:"
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     print "slen\tsubslen"
     for l in xrange(1, 20):
         string = 'a' * l
-        print "%d\t%d" % (len(string), len([1 for s in substring_iter(string)]))
+        print "%d\t%d" % (len(string), len([1 for s, _ in substring_iter(string)]))
 
 
 
