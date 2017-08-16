@@ -37,7 +37,7 @@ class Parsing(object):
 
         # exact match for substring
         for substring, span in substring_iter(u_q, min_len=2):
-            if len(substring) > 10: continue
+            if len(substring) > 15: continue
             if not(all(span[1] <= s[0] or span[0] >= s[1] for s in pos_overlap_check)):
                 continue
 
