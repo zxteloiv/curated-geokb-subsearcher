@@ -44,6 +44,7 @@ class SearchHandler(tornado.web.RequestHandler):
         ungrounded = self.application.parsing_model._parsing_first_order_rules(
                 self.application.parsing_model._match_keys(q))
 
+        self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({"errno":0, "errmsg":"ok", "data":docs,
             "ungrounded":ungrounded, "grounded":grounded}))
 
