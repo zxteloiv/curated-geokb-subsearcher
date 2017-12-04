@@ -8,6 +8,9 @@ minimal_keyword_scores = dict(
     catering_dish_cond = 2,
 )
 
+coarse_search_limit = 20
+finer_search_limit = 15
+
 # comparable indexes using regular expression
 import re
 re_comparable_index = dict(
@@ -65,6 +68,23 @@ conditionable_index = dict(
         hotel = ['price_cond', 'entity', 'hotel_facility_cond', 'room_facility_cond', 'hotel_service_cond'],
         tour = ['price_cond', 'entity']
         )
+
+extended_match_index = dict(
+    catering_opening_hour_cond = [
+        (re.compile(u"(现在|今天)(开门|营业)"),
+         "at", 1),
+
+        (re.compile(u"((节假日|工作日|周[一二三四五六日]|周末|今天)?(早上|下午|晚上|半夜)?\d+点).?(开门|营业)"),
+         "at", 1),
+
+        (re.compile(u"((早上|下午|晚上|半夜)([一二三四五六七八九十]|十一|十二)点).?(开门|营业)"),
+         "at", 1),
+    ],
+
+    tour_opening_hour_cond = [
+        # 'opening_hour_cond'
+    ],
+)
 
 mongo_comparison_spec = dict(
 
@@ -125,7 +145,9 @@ mongo_grounding_map = dict(
                 'address': u'地址', 'category': u'领域', 'entity': u'名称', 'location': u'地点',
                 'dish': u'推荐菜品', 'phone': u'电话', 'price': u'人均消费', 'opening_hour': u'营业时间',
 
+                # special ungrounded keys
                 'popularity': u'popularity',
+                'opening_hour_cond': u'营业时间',
 
                 # conditionable ungrounded keys
                 'price_cond': u'人均消费', 'dish_cond': u'推荐菜品',
@@ -135,8 +157,9 @@ mongo_grounding_map = dict(
                 # interrogative ungrounded keys
                 'address': u'地址', 'category': u'领域', 'entity': u'名称', 'location': u'地点',
                 'check-in_time': u'入离店时间', 'phone': u'联系方式', 'price_per_night': u'每晚最低价格',
-                'hotel_facility': u'酒店设施', 'room_facility': u'房间设施', 'service': u'酒店服务',
+                'hotel_facility': u'酒店设施', 'room_facility': u'房间设施', 'hotel_service': u'酒店服务',
 
+                # special ungrounded keys
                 'popularity': u'popularity',
 
                 # conditionable ungrounded keys
@@ -149,7 +172,9 @@ mongo_grounding_map = dict(
                 'address': u'地址', 'category': u'领域', 'entity': u'名称', 'location': u'地点',
                 'opening_hour': u'营业时间', 'phone': u'电话', 'price': u'门票价格',
 
+                # special ungrounded keys
                 'popularity': u'popularity',
+                'opening_hour_cond': u'营业时间',
 
                 # conditionable ungrounded keys
                 'price_cond': u'门票价格',

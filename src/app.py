@@ -44,7 +44,7 @@ class SearchHandler(tornado.web.RequestHandler):
             return
 
         mongo = MongoQuery()
-        docs = mongo.query(grounded)
+        docs = mongo.query(grounded, conf.coarse_search_limit)
 
         # debug ungrounded
         ungrounded = self.application.parsing_model._parsing_first_order_rules(

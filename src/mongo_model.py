@@ -24,3 +24,8 @@ class MongoQuery(object):
 
         return res
 
+    def coarse_query(self, grounded, limit=2000):
+        col = self._db[grounded['from']]
+        docs = col.find(grounded['where'], limit=limit, sort=[('popularity', -1), ('_id', 1)])
+        return docs
+
