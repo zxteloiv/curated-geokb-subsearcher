@@ -76,7 +76,7 @@ class Parsing(object):
         if len(ungrounded_form['select']) == 1 and 'entity' in ungrounded_form['select']:
             grounded['select'].append('*')
         else:
-            grounded['select'].extend(field_map[domain][x] for x in ['entity', 'address'])
+            grounded['select'].extend(field_map[domain][x] for x in ['entity', 'address', 'popularity'])
             grounded['select'] = list(set(grounded['select']))
 
         # ground-ing `where` section

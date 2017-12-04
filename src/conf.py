@@ -121,6 +121,8 @@ mongo_grounding_map = dict(
                 'address': u'地址', 'category': u'领域', 'entity': u'名称', 'location': u'地点',
                 'dish': u'推荐菜品', 'phone': u'电话', 'price': u'人均消费', 'opening_hour': u'营业时间',
 
+                'popularity': u'popularity',
+
                 # conditionable ungrounded keys
                 'price_cond': u'人均消费', 'dish_cond': u'推荐菜品',
                 },
@@ -131,6 +133,8 @@ mongo_grounding_map = dict(
                 'check-in_time': u'入离店时间', 'phone': u'联系方式', 'price_per_night': u'每晚最低价格',
                 'hotel_facility': u'酒店设施', 'room_facility': u'房间设施', 'service': u'酒店服务',
 
+                'popularity': u'popularity',
+
                 # conditionable ungrounded keys
                 'price_cond': u'每晚最低价格', 'hotel_facility_cond': u'酒店设施',
                 'room_facility_cond': u'房间设施', 'hotel_service_cond': u'酒店服务',
@@ -140,6 +144,8 @@ mongo_grounding_map = dict(
                 # interrogative ungrounded keys
                 'address': u'地址', 'category': u'领域', 'entity': u'名称', 'location': u'地点',
                 'opening_hour': u'营业时间', 'phone': u'电话', 'price': u'门票价格',
+
+                'popularity': u'popularity',
 
                 # conditionable ungrounded keys
                 'price_cond': u'门票价格',
