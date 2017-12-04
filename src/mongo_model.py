@@ -10,7 +10,7 @@ class MongoQuery(object):
 
     def query(self, grounded, limit=15):
         col = self._db[grounded['from']]
-        docs = col.find(grounded['where'], limit=limit, sort=[('popularity', -1)])
+        docs = col.find(grounded['where'], limit=limit, sort=[('popularity', -1), ('_id', 1)])
 
         if '*' in grounded['select']:
             res = [dict((k, v) for k, v in doc.iteritems() if k != '_id') for doc in docs]

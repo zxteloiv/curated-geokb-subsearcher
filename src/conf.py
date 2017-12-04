@@ -4,6 +4,10 @@ dict_path = "data"
 listening_port = 34567
 mongodb_conn_str = 'mongodb://192.168.200.190:27017'
 
+minimal_keyword_scores = dict(
+    catering_dish_cond = 2,
+)
+
 # comparable indexes using regular expression
 import re
 re_comparable_index = dict(

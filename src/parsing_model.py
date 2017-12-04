@@ -45,6 +45,9 @@ class Parsing(object):
                 score = dicts[index].get(substring)
                 if score is None: continue
 
+                if index in conf.minimal_keyword_scores and float(score) < conf.minimal_keyword_scores[index]:
+                    continue
+
                 if index not in matched_keys:
                     matched_keys[index] = []
 
