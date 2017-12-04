@@ -71,12 +71,13 @@ class Parsing(object):
         grounded['select'] = [field_map[domain].get(x) for x in ungrounded_form['select']]
         if None in grounded['select']: # which means there's invalid index name in the ungrounded_form
             return None
+
+        # make sure the basic fields are exists within grounded forms: entity_name, address, or everything
         if len(ungrounded_form['select']) == 1 and 'entity' in ungrounded_form['select']:
             grounded['select'].append('*')
-        elif len(ungrounded_form['select']) == 0: # nothing selected
+        else:
             grounded['select'].extend(field_map[domain][x] for x in ['entity', 'address'])
-        elif 'entity' not in ungrounded_form['select']:
-            grounded['select'].append(field_map[domain]['entity'])
+            grounded['select'] = list(set(grounded['select']))
 
         # ground-ing `where` section
         grounded['where'] = {}
@@ -148,9 +149,10 @@ class Parsing(object):
             if k not in keys: continue
             if not ungrounded_form['where']:
                 ungrounded_form['where'][k] = in_domain_match[k]
+                ungrounded_form['select'].append(k)
             keys.remove(k)
 
-        ungrounded_form['select'] = list(keys)
+        ungrounded_form['select'].extend(list(keys))
         # remove the conditionable keys if its interrogative companion is in `select` section
         # because the interrogation words are more accurate
         for k in keys:

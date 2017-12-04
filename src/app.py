@@ -9,12 +9,18 @@ from parsing_model import Parsing
 from mongo_model import MongoQuery
 from trie import TrieIndex
 
+
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("Hello, world")
 
+
 class SearchHandler(tornado.web.RequestHandler):
     """Handle request to the /match route, only GET request is processed."""
+
+    def data_received(self, chunk):
+        pass
+
     def get(self):
         """Process the GET request.
 
@@ -42,17 +48,18 @@ class SearchHandler(tornado.web.RequestHandler):
 
         # debug ungrounded
         ungrounded = self.application.parsing_model._parsing_first_order_rules(
-                self.application.parsing_model._match_keys(q))
+            self.application.parsing_model._match_keys(q))
 
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps({"errno":0, "errmsg":"ok", "data":docs,
-            "ungrounded":ungrounded, "grounded":grounded}))
+                               "ungrounded":ungrounded, "grounded":grounded}))
+
 
 class GeoKBSearcher(tornado.web.Application):
     def init_dict(self):
         self.dicts = {}
-        self.dictfiles = dict((f.split('.')[0], f)
-                for f in os.listdir(conf.dict_path) if f.endswith('txt'))
+        self.dictfiles = dict((f.split('.')[0], f) 
+                              for f in os.listdir(conf.dict_path) if f.endswith('txt'))
 
         for f_tag, f in self.dictfiles.iteritems():
             findex = TrieIndex()
@@ -60,13 +67,14 @@ class GeoKBSearcher(tornado.web.Application):
                 parts = line.decode('utf-8').rstrip().split('\t')
                 try:
                     findex.add(parts[0], float(parts[1]))
-                except:
+                except Exception:
                     print "errline:", line.rstrip()
                     continue
 
             self.dicts[f_tag] = findex
 
         self.parsing_model = Parsing(self.dicts)
+
 
 def make_app():
     app = GeoKBSearcher([
@@ -76,6 +84,7 @@ def make_app():
 
     app.init_dict()
     return app
+
 
 if __name__ == "__main__":
     app = make_app()

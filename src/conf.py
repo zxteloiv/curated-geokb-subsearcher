@@ -2,7 +2,7 @@
 
 dict_path = "data"
 listening_port = 34567
-mongodb_conn_str = 'mongodb://localhost:27017'
+mongodb_conn_str = 'mongodb://192.168.200.190:27017'
 
 # comparable indexes using regular expression
 import re
