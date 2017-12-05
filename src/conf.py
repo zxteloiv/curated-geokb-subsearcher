@@ -77,12 +77,19 @@ extended_match_index = dict(
         (re.compile(u"((节假日|工作日|周[一二三四五六日]|周末|今天)?(早上|下午|晚上|半夜)?\d+点).?(开门|营业)"),
          "at", 1),
 
-        (re.compile(u"((早上|下午|晚上|半夜)([一二三四五六七八九十]|十一|十二)点).?(开门|营业)"),
+        (re.compile(u"((早上|下午|晚上|半夜)([一二三四五六七八九十\d]|十一|十二|1[012])点).?(开门|营业)"),
          "at", 1),
     ],
 
     tour_opening_hour_cond = [
-        # 'opening_hour_cond'
+        (re.compile(u"(现在|今天)(开门|营业)"),
+         "at", 1),
+
+        (re.compile(u"((节假日|工作日|周[一二三四五六日]|周末|今天)?(早上|下午|晚上|半夜)?\d+点).?(开门|营业)"),
+         "at", 1),
+
+        (re.compile(u"((早上|下午|晚上|半夜)([一二三四五六七八九十\d]|十一|十二|1[012])点).?(开门|营业)"),
+         "at", 1),
     ],
 )
 
@@ -91,6 +98,10 @@ extendable_index = dict(
     tour = ['opening_hour_cond'],
     hotel = [],
 )
+
+extended_ranker = {
+    u'营业时间': 'TimeRanker',
+}
 
 mongo_comparison_spec = dict(
 
