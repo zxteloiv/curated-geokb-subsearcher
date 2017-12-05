@@ -86,6 +86,12 @@ extended_match_index = dict(
     ],
 )
 
+extendable_index = dict(
+    catering = ['opening_hour_cond'],
+    tour = ['opening_hour_cond'],
+    hotel = [],
+)
+
 mongo_comparison_spec = dict(
 
         # configs are listed as K:V pairs categorized by each domain,

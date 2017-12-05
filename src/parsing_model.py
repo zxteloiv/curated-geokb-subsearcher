@@ -97,22 +97,23 @@ class Parsing(object):
             if k not in matched_keys: continue
             if not ungrounded_form['where']:
                 ungrounded_form['where'][k] = in_domain_match[k]
-            #     ungrounded_form['select'].append(k)
-            # matched_keys.remove(k)
+                ungrounded_form['select'].append(k)
+            matched_keys.remove(k)
 
-        # all the conditioning keys are used in selection
+        # almost all the conditioning keys are used in selection,
+        # except those not occurred in `where` but is conditioned
         ungrounded_form['select'].extend(list(matched_keys))
 
-        for k in conf.extended_match_index.iterkeys():
-            if k in matched_keys:
-                ungrounded_form[k] = in_domain_match[k]
+        for k in conf.extendable_index[domain]:
+            if k in in_domain_match.keys():
+                ungrounded_form['extended'][k] = in_domain_match[k]
                 if k in ungrounded_form['where']:
                     del ungrounded_form['where'][k]
 
         return ungrounded_form
 
     @staticmethod
-    def _best_triple_by_score(self, matched_keys, key):
+    def _best_triple_by_score(matched_keys, key):
         # matched keys contains: K, V pairs
         # K is a string
         # V is a list of triples: (symbol, value, score)
@@ -170,9 +171,10 @@ class Parsing(object):
             return None
 
         # ground-ing `extended` section, which is simple because we do not rely on the mongo engine
-        # grounded['extended'] = [field_map[domain].get(x[0]) for x in ungrounded_form['select']]
-        # if None in grounded['extended']:
-        #     return None
+        grounded['extended'] = dict((field_map[domain].get(k), v)
+                                    for k, v in ungrounded_form['extended'].iteritems())
+        if None in grounded['extended']:
+            return None
 
         # make sure the basic fields are exists within grounded forms: entity_name, address, or everything
         if len(ungrounded_form['select']) == 1 and 'entity' in ungrounded_form['select']:
