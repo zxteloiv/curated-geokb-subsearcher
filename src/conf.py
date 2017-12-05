@@ -8,7 +8,7 @@ minimal_keyword_scores = dict(
     catering_dish_cond = 2,
 )
 
-coarse_search_limit = 20
+coarse_search_limit = 1000
 finer_search_limit = 15
 
 # comparable indexes using regular expression

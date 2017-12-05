@@ -58,8 +58,7 @@ class TimeRanker(object):
 
         # compute day of week if required implicitly in time utterance
         dayofweek = None
-        dynamic_dates = [u'现在', u'今天']
-        if any(TimeRanker.general_match(x, time_utterance) for x in dynamic_dates):
+        if any(TimeRanker.general_match(x, time_utterance) for x in TimeRanker.dynamic_dates()):
             today = datetime.datetime.now() if today is None else today
             dayofweek = today.isoweekday()
 
@@ -91,11 +90,26 @@ class TimeRanker(object):
         check if time utterance talks about a time between the span
         :return True if the time is within the time span, otherwise False is returned
         """
-        starts = datetime.datetime.strptime(starts, "%H:%M")
-        ends = datetime.datetime.strptime(ends, "%H:%M")
+        def normalize_time_range(timestr, pattern):
+            try:
+                dt = datetime.datetime.strptime(timestr, pattern)
+            except ValueError:
+                timestr = timestr.replace('24', '23')
+                dt = datetime.datetime.strptime(timestr, pattern)
+                dt += datetime.timedelta(hours=1)
+            return dt
 
-        if today is not None:
-            return starts.hour <= today.hour <= ends.hour
+        starts = normalize_time_range(starts, "%H:%M")
+        ends = normalize_time_range(ends, "%H:%M")
+
+        # compute day of week if required implicitly in time utterance
+        if any(TimeRanker.general_match(x, time_utterance) for x in TimeRanker.dynamic_dates()):
+            today = datetime.datetime.now() if today is None else today
+            if (starts.hour <= today.hour < ends.hour
+                or (today.hour == ends.hour and today.minute < ends.minute)):
+                return True
+            else:
+                return False
 
         am_modifier = [u'早上', u'半夜', u'中午']
         pm_modifier = [u'下午', u'晚上']
@@ -151,6 +165,10 @@ class TimeRanker(object):
     @staticmethod
     def unlimited_exps():
         return [ u'24小时', u'每天', u'全天', ]
+
+    @staticmethod
+    def dynamic_dates():
+        return [u'现在', u'今天']
 
     @staticmethod
     def general_match(pattern, string):

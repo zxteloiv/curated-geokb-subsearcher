@@ -1,5 +1,5 @@
 # coding: utf-8
-import os, os.path, json
+import os, os.path, json, datetime
 
 import tornado.ioloop
 import tornado.web
@@ -7,7 +7,9 @@ import tornado.web
 import conf
 from parsing_model import Parsing
 from mongo_model import MongoQuery
+import fine_ranker
 from trie import TrieIndex
+FineRanker = fine_ranker.FineRanker
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -33,10 +35,18 @@ class SearchHandler(tornado.web.RequestHandler):
             data (list): 
         """
         q = self.get_argument('q', default=None)
+        now = self.get_argument('time', default=None)
 
         if not q:
             self.write({"errno": 1, "errmsg": "parameter is missing"})
             return
+
+        if now is not None:
+            try:
+                now = datetime.datetime.strptime(now, '%Y-%m-%d %H:%M')
+            except Exception:
+                self.write({"errno": 1, "errmsg": "time is not valid, try YYYY-mm-dd HH:MM"})
+                return
 
         grounded = self.application.parsing_model.parse_for_mongo(q)
         if grounded is None:
@@ -44,16 +54,21 @@ class SearchHandler(tornado.web.RequestHandler):
             return
 
         mongo = MongoQuery()
-        docs = mongo.query(grounded, conf.coarse_search_limit)
+        docs = mongo.coarse_query(grounded, conf.coarse_search_limit)
+        reranker = FineRanker(conf.extended_ranker)
+        reranker.compute_rank_on(docs, grounded, today=now)
+        docs = sorted(docs,
+                      key=lambda doc: doc['popularity'] * 100 + sum(v for _, v in doc['_rerank'].iteritems()),
+                      reverse=True)
+        docs = mongo.project(docs, grounded, conf.finer_search_limit)
 
         # debug ungrounded
         # ungrounded = self.application.parsing_model._parsing_first_order_rules(
         #     self.application.parsing_model._match_keys(q))
-        ungrounded = ""
+        # ungrounded = ""
 
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({"errno":0, "errmsg":"ok", "data":docs,
-                               "ungrounded":ungrounded, "grounded":grounded}))
+        self.write(json.dumps({"errno":0, "errmsg":"ok", "data":docs, "grounded":grounded}))
 
 
 class GeoKBSearcher(tornado.web.Application):
