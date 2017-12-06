@@ -102,15 +102,6 @@ class TimeRanker(object):
         starts = normalize_time_range(starts, "%H:%M")
         ends = normalize_time_range(ends, "%H:%M")
 
-        # compute day of week if required implicitly in time utterance
-        if any(TimeRanker.general_match(x, time_utterance) for x in TimeRanker.dynamic_dates()):
-            today = datetime.datetime.now() if today is None else today
-            if (starts.hour <= today.hour < ends.hour
-                or (today.hour == ends.hour and today.minute < ends.minute)):
-                return True
-            else:
-                return False
-
         am_modifier = [u'早上', u'半夜', u'中午']
         pm_modifier = [u'下午', u'晚上']
         m = re.search(u'((二?十)?[一二三四五六七八九])点', time_utterance)
@@ -119,14 +110,27 @@ class TimeRanker(object):
             m = re.search(u'(\d+)点', time_utterance)
             hour = int(m.group(1)) if m else None
 
-        if any(TimeRanker.general_match(x, time_utterance) for x in am_modifier):
-            hour %= 12
-        elif any(TimeRanker.general_match(x, time_utterance) for x in pm_modifier):
-            hour = (hour % 12) + 12
-        else:
-            hour %= 24
+        # any hour spec is matched in the utterance
+        if hour is not None:
+            if any(TimeRanker.general_match(x, time_utterance) for x in am_modifier):
+                hour %= 12
+            elif any(TimeRanker.general_match(x, time_utterance) for x in pm_modifier):
+                hour = (hour % 12) + 12
+            else:
+                hour %= 24
 
-        return starts.hour <= hour <= ends.hour
+            return starts.hour <= hour <= ends.hour
+
+        # hour is not specified explicitly in utterance, check if current time is implied
+        if any(TimeRanker.general_match(x, time_utterance) for x in TimeRanker.dynamic_dates()):
+            today = datetime.datetime.now() if today is None else today
+            if (starts.hour <= today.hour < ends.hour
+                or (today.hour == ends.hour and today.minute < ends.minute)):
+                return True
+            else:
+                return False
+
+        return False
 
     @staticmethod
     def parse_chn_hour_num(chn_hour_utterance):
