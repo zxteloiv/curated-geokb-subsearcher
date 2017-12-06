@@ -1,7 +1,7 @@
 # coding: utf-8
 
 def substring_iter(string, min_len=1):
-    for l in xrange(min_len, len(string)):
+    for l in xrange(min_len, len(string) + 1):
         for pos in xrange(0, len(string)):
             endpos = pos + l
             if endpos > len(string):

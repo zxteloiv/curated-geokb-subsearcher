@@ -153,7 +153,10 @@ mongo_grounding_map = dict(
 
         domain_map = {'catering': 'cater', 'tour': 'tour', 'hotel': 'hotel'},
 
-        city_map = {u'广州': 'guangzhou', u'北京': 'beijing', u'上海': 'shanghai'},
+        city_map = {
+            u'广州': 'guangzhou', u'北京': 'beijing', u'上海': 'shanghai',
+            'guangzhou': 'guangzhou', 'beijing': 'beijing', 'shanghai': 'shanghai',
+        },
 
         # map an ungrounded key to a grouned one
         field_map = {
