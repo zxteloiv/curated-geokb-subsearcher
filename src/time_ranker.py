@@ -168,7 +168,7 @@ class TimeRanker(object):
 
     @staticmethod
     def unlimited_exps():
-        return [ u'24小时', u'每天', u'全天', ]
+        return [ u'24小时', u'每天', u'全天', u'随时' ]
 
     @staticmethod
     def dynamic_dates():
