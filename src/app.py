@@ -23,6 +23,9 @@ class SearchHandler(tornado.web.RequestHandler):
     def data_received(self, chunk):
         pass
 
+    def post(self):
+        self.get()
+
     def get(self):
         """Process the GET request.
 
