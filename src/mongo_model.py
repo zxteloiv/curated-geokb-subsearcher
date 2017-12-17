@@ -23,7 +23,8 @@ class MongoQuery(object):
             for doc in docs:
                 selected = {}
                 for k in grounded['select']:
-                    selected[k] = doc[k]
+                    if k in doc:
+                        selected[k] = doc[k]
                 res.append(selected)
 
         return res
@@ -52,8 +53,11 @@ class MongoQuery(object):
                 pass
 
             if '*' in grounded['select']:
-                res.append(dict((k, v) if type(v) != type([]) else (k, self._merge_obj_array(v))
-                                for k, v in doc.iteritems() if k != '_id'))
+                doc = dict((k, v) if type(v) != type([]) else (k, self._merge_obj_array(v))
+                        for k, v in doc.iteritems() if k != '_id')
+                doc['src'] = 'geokb'
+                doc['score'] = 2.0  # fixed high score for nginx blender, in another module
+                res.append(doc)
             else:
                 selected = {}
                 for k in grounded['select']:
@@ -62,6 +66,8 @@ class MongoQuery(object):
                     else:
                         selected[k] = doc[k]
                 selected['_sys_ranks'] = doc['_sys_ranks']
+                selected['src'] = 'geokb'
+                selected['score'] = 2.0  # fixed high score for nginx blender, in another module
                 res.append(selected)
 
         return res

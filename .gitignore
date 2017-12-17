@@ -108,3 +108,4 @@ ENV/
 
 .idea
 .vscode
+log.*

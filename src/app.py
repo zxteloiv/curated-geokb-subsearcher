@@ -67,7 +67,7 @@ class SearchHandler(tornado.web.RequestHandler):
         # ungrounded = ""
 
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps({"errno":0, "errmsg":"ok", "data":docs, "grounded":grounded}))
+        self.write(json.dumps({"errno":0, "errmsg":"ok", "data":docs, "grounded":grounded, "match_score":1.}))
 
     @staticmethod
     def normalize_params(q, now, sex, age, domain, city):
