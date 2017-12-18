@@ -2,7 +2,7 @@
 
 dict_path = "data"
 listening_port = 34567
-mongodb_conn_str = 'mongodb://127.0.0.1:27017'
+mongodb_conn_str = 'mongodb://mongosvr:27017'
 
 minimal_keyword_scores = dict(
     catering_dish_cond = 2,
