@@ -3,6 +3,7 @@
 dict_path = "data"
 listening_port = 34567
 mongodb_conn_str = 'mongodb://mongosvr:27017'
+domain_classify_conn_str = 'http://domain-classify:23456'
 
 minimal_keyword_scores = dict(
     catering_dish_cond = 2,

@@ -2,6 +2,7 @@
 
 import conf
 from substring import substring_iter
+import requests
 
 class Parsing(object):
     def __init__(self, dicts):
@@ -9,7 +10,7 @@ class Parsing(object):
 
     def parse_for_mongo(self, u_q, domain=None, city=None):
         matched_keys = self._match_keys(u_q)
-        ungrounded_form = self._parsing_first_order_rules(matched_keys, domain, city)
+        ungrounded_form = self._parsing_first_order_rules(matched_keys, domain, city, u_q)
         if ungrounded_form is None:
             return
 
@@ -65,11 +66,20 @@ class Parsing(object):
 
         return matched_keys
 
-    def _parsing_first_order_rules(self, matched_keys, domain=None, city=None):
+    def _parsing_first_order_rules(self, matched_keys, domain=None, city=None, query=None):
         # example of matched_keys:
         # ["tour_entity", ["基督教天河堂", 1.0]], ["catering_location", ["广州", 656.0]]
         domain = self._parse_domain(matched_keys) if domain is None else domain
-        if domain is None: return None
+        if domain is None:
+            # still domain is missing, use the external service
+            try:
+                req = requests.get(conf.domain_classify_conn_str, {'q': query}, timeout=5)
+                res = req.json()
+                domain = res['data']
+                if domain not in conf.conditionable_index.keys():
+                    return None
+            except:
+                return None
         city = self._parse_city(domain, matched_keys) if city is None else city
         if city is None: return None
 
